@@ -9,8 +9,8 @@ def get_max_image_id():
 
 
 def get_image(directory, img, json_filename, files_info):
-    filename = img.split('/')[-1]
-    file_path = "{}/{}".format(directory, filename)
+    filename = os.path.basename(img)
+    file_path = os.path.join(directory, filename)
     response = requests.get(img)
     if response.ok:
         with open(file_path, 'wb') as file:
@@ -30,7 +30,7 @@ def fetch_xckd_comics(directory, json_filename, image_id=None):
          description = response.json()['alt']
          title = response.json()['safe_title']
          image_id = response.json()['num']
-         filename = response.json()['img'].split('/')[-1]
+         filename = os.path.basename(response.json()['img'])
          img = response.json()['img']
 
          files_info = json_file.load_file(directory, json_filename)
@@ -48,7 +48,12 @@ def fetch_xckd_comics(directory, json_filename, image_id=None):
 def get_random_image_id(directory, json_filename, max_image_id):
     file_contents = json_file.load_file(directory, json_filename)
     loaded_images = file_contents.keys()
-    missing_images = [str(image) for image in range(1,max_image_id+1) if str(image) not in loaded_images]
+    missing_images = []
+    for image in range(1, max_image_id + 1):
+        if str(image) in loaded_images:
+            continue
+        missing_images.append(str(image))
+
     image_id = random.choice(missing_images)
     return image_id
 
@@ -56,12 +61,12 @@ def get_random_image_id(directory, json_filename, max_image_id):
 def fetch_xckd_random_comics(directory, json_filename):
     json_file.ensure_dir(directory)
     max_image_id = get_max_image_id()
-    if max_image_id is not None:
-        image_id = get_random_image_id(directory, json_filename, max_image_id)
-        if image_id is not None:
-            fetch_xckd_comics(directory, json_filename, image_id)
-    else:
-        image_id = None
+    if max_image_id is None:
+        return None
+
+    image_id = get_random_image_id(directory, json_filename, max_image_id)
+    if image_id is not None:
+       fetch_xckd_comics(directory, json_filename, image_id)
 
     return image_id
 
@@ -72,8 +77,7 @@ def main():
     directory = os.getenv("DIRECTORY")
     json_filename = os.getenv("JSON_FILENAME")
 
-    image_id = fetch_xckd_random_comics(directory, json_filename)
-    print(image_id)
+    fetch_xckd_random_comics(directory, json_filename)
 
 
 if __name__ == "__main__":

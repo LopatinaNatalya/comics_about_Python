@@ -3,7 +3,7 @@ import os, json
 
 def load_file(directory, filename):
   try:
-    file_path = '{}/{}'.format(directory, filename)
+    file_path = os.path.join(directory, filename)
     with open(file_path, "r") as json_file:
         file_contents = json.load(json_file)
   except FileNotFoundError:
@@ -13,7 +13,7 @@ def load_file(directory, filename):
 
 def write_file(directory, filename, file_contents):
   ensure_dir(directory)
-  file_path = '{}/{}'.format(directory, filename)
+  file_path = os.path.join(directory, filename)
   with open(file_path, "w") as json_file:
     json.dump(file_contents, json_file)
 
