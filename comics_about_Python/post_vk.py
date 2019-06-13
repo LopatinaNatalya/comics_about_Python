@@ -21,6 +21,10 @@ def get_server_address_to_upload_photos(access_token, group_id):
 
 
 def upload_photo(upload_url, directory, filename, caption):
+    hash = None
+    server = None
+    photo = None
+
     filepath = os.path.join(directory, filename)
 
     files = {
@@ -29,8 +33,13 @@ def upload_photo(upload_url, directory, filename, caption):
         'caption': caption
             }
     response = requests.post(upload_url, files=files)
+    if response is not None:
+        hash = response.json()['hash']
+        server = response.json()['server']
+        photo = response.json()['photo']
 
-    return (None, None, None) if response is None else (response.json()['hash'], response.json()['server'], response.json()['photo'])
+
+    return hash, server, photo
 
 
 def save_photo(access_token, user_id, group_id, photo, hash, server, caption):
@@ -46,7 +55,7 @@ def save_photo(access_token, user_id, group_id, photo, hash, server, caption):
     }
 
     response = get_vk(method, payload)
-    return None if response is None else 'photo'+str(response[0]['owner_id'])+'_'+str(response[0]['id'])
+    return None if response is None else 'photo{}_{}'.format(str(response[0]['owner_id']), str(response[0]['id']))
 
 
 def post_on_wall(access_token, message, group_id, attachments=''):
@@ -75,20 +84,20 @@ def post_image(directory, json_filename, image_id):
 
     upload_url = get_server_address_to_upload_photos(access_token, group_id)
     if upload_url is None:
-        return False
+        return
     hash, server, photo = upload_photo(upload_url, directory, filename, caption)
     if hash is None or server is None or photo is None:
-        return False
+        return
     attachments = save_photo(access_token, user_id, group_id, photo, hash, server, caption)
     if attachments is None:
-        return False
+        return
     post_on_wall(access_token, title, group_id, attachments)
 
     os.remove(filepath)
 
     file_contents[image_id]["posted"] = True
     json_file.write_file(directory, json_filename, file_contents)
-    return True
+
 
 def get_random_image_id(directory, json_filename, max_image_id):
     file_contents = json_file.load_file(directory, json_filename)
@@ -113,21 +122,20 @@ def post_xckd_comics(image_info=None):
     elif image_info.upper() == 'RANDOM':
         image_id = get_random_image_id(directory, json_filename, max_image_id)
     elif not image_info.isdigit():
-        return False
+        return
     elif int(image_info) > int(max_image_id):
-        return False
+        return
     else:
         image_id = image_info
 
     file_contents = json_file.load_file(directory, json_filename)
     if image_id not in file_contents:
         fetch_xckd.fetch_xckd_comics(directory, json_filename, image_id)
-        return post_image(directory, json_filename, image_id)
+        file_contents = json_file.load_file(directory, json_filename)
+
 
     if not file_contents[image_id]['posted']:
-        return post_image(directory, json_filename, image_id)
-    else:
-        return False
+        post_image(directory, json_filename, image_id)
 
 
 def main():

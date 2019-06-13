@@ -26,23 +26,25 @@ def fetch_xckd_comics(directory, json_filename, image_id=None):
         url='http://xkcd.com/{}/info.0.json'.format(image_id)
 
     response = requests.get(url)
-    if response.ok:
-         description = response.json()['alt']
-         title = response.json()['safe_title']
-         image_id = response.json()['num']
-         filename = os.path.basename(response.json()['img'])
-         img = response.json()['img']
+    if not response.ok:
+        return
 
-         files_info = json_file.load_file(directory, json_filename)
-         if image_id not in files_info:
-             files_info[image_id] = {
+    description = response.json()['alt']
+    title = response.json()['safe_title']
+    image_id = response.json()['num']
+    filename = os.path.basename(response.json()['img'])
+    img = response.json()['img']
+
+    files_info = json_file.load_file(directory, json_filename)
+    if image_id not in files_info:
+        files_info[image_id] = {
                     "title": title,
                     "filename": filename,
                     "description": description,
                     "posted": False
              }
 
-             get_image(directory, img, json_filename, files_info)
+        get_image(directory, img, json_filename, files_info)
 
 
 def get_random_image_id(directory, json_filename, max_image_id):
